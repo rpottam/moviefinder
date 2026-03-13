@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useMovies } from '../context/MovieContext';
+import { useAuth } from '../context/AuthContext';
+import { LogOut, LogIn } from 'lucide-react';
 
-const Header = ({ toggleSidebar }) => {
+const Header = ({ toggleSidebar, onAuthOpen }) => {
   const { searchQuery, setSearchQuery } = useMovies();
+  const { user, logout } = useAuth();
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
   const handleSearch = (e) => {
@@ -52,10 +55,31 @@ const Header = ({ toggleSidebar }) => {
         </form>
       </div>
       
-      <div className="hidden md:flex items-center gap-4">
-        <div className="w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors">
-          <span className="text-xs font-bold font-mono">US</span>
-        </div>
+      <div className="flex items-center gap-2 md:gap-4">
+        {user ? (
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block text-right">
+              <p className="text-xs text-textSecondary overflow-hidden max-w-[120px] truncate">
+                {user.email}
+              </p>
+            </div>
+            <button 
+              onClick={logout}
+              className="w-10 h-10 rounded-full bg-surface border border-white/10 flex items-center justify-center cursor-pointer hover:bg-red-500/20 hover:text-red-500 transition-all group"
+              title="Logout"
+            >
+              <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={onAuthOpen}
+            className="glass-button py-2 px-4 flex items-center gap-2 text-sm"
+          >
+            <LogIn size={16} />
+            <span className="hidden sm:inline">Sign In</span>
+          </button>
+        )}
       </div>
     </header>
   );

@@ -1,16 +1,21 @@
 import React from 'react';
-import { TrendingUp, Sparkles, History, Star } from 'lucide-react';
+import { TrendingUp, Sparkles, History, Star, Bookmark } from 'lucide-react';
 import { useMovies } from '../context/MovieContext';
+import { useAuth } from '../context/AuthContext';
+
 
 const ContentFilters = () => {
   const { contentType, setContentType } = useMovies();
+  const { user } = useAuth();
 
   const filters = [
     { id: 'trending', label: 'Trending', icon: TrendingUp },
     { id: 'new', label: 'New', icon: Sparkles },
     { id: 'classics', label: 'Classics', icon: History },
     { id: 'top_rated', label: 'Top Rated', icon: Star },
+    ...(user ? [{ id: 'bookmarks', label: 'Bookmarks', icon: Bookmark }] : []),
   ];
+
 
   return (
     <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">

@@ -1,5 +1,9 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { tmdbApi } from '../services/tmdb';
+import { db } from '../services/firebase';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
+import { useAuth } from './AuthContext';
+
 
 const MovieContext = createContext();
 
@@ -11,11 +15,15 @@ export const MovieProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [bookmarks, setBookmarks] = useState([]);
+  const { user } = useAuth();
+
   
   // Filters
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [selectedGenres, setSelectedGenres] = useState([]);
-  const [contentType, setContentType] = useState('trending'); // trending, new, classics, top_rated
+  const [contentType, setContentType] = useState('trending'); // trending, new, classics, top_rated, bookmarks
+
 
   
   // Pagination
@@ -28,6 +36,54 @@ export const MovieProvider = ({ children }) => {
       .then(data => setGenres(data.genres))
       .catch(err => console.error("Error fetching genres:", err));
   }, []);
+
+  // Sync Bookmarks from Firestore
+  useEffect(() => {
+    if (!user) {
+      setBookmarks([]);
+      return;
+    }
+
+    const docRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(docRef, (doc) => {
+      if (doc.exists()) {
+        setBookmarks(doc.data().bookmarks || []);
+      } else {
+        setBookmarks([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const toggleBookmark = async (movie) => {
+    if (!user) {
+      alert("Please login to bookmark movies");
+      return;
+    }
+
+    const docRef = doc(db, 'users', user.uid);
+    const isBookmarked = bookmarks.some(b => b.id === movie.id);
+
+    try {
+      if (isBookmarked) {
+        await updateDoc(docRef, {
+          bookmarks: arrayRemove(movie)
+        });
+      } else {
+        const userDoc = await getDoc(docRef);
+        if (!userDoc.exists()) {
+          await setDoc(docRef, { bookmarks: [movie] });
+        } else {
+          await updateDoc(docRef, {
+            bookmarks: arrayUnion(movie)
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling bookmark:", err);
+    }
+  };
 
   const fetchMovies = useCallback(async (resetPage = false) => {
     try {
@@ -86,7 +142,16 @@ export const MovieProvider = ({ children }) => {
               sort_by: 'vote_average.desc'
             });
             break;
+          case 'bookmarks':
+            // Bookmarks are local to state, no TMDb call needed
+            // But we simulate the data structure
+            data = {
+              results: bookmarks,
+              total_pages: 1
+            };
+            break;
           case 'trending':
+
           default:
             if (hasFilters) {
               // Fallback to popularity discovery if genres/langs are selected
@@ -111,7 +176,8 @@ export const MovieProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, selectedLanguage, selectedGenres, page]);
+  }, [searchQuery, selectedLanguage, selectedGenres, page, contentType, bookmarks]);
+
 
   useEffect(() => {
     fetchMovies(true);
@@ -164,8 +230,11 @@ export const MovieProvider = ({ children }) => {
       contentType,
       setContentType,
       clearFilters,
+      bookmarks,
+      toggleBookmark,
       loadMore,
       hasMore: page < totalPages
+
 
     }}>
 

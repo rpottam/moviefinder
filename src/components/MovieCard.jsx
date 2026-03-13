@@ -1,8 +1,15 @@
 import React from 'react';
 import { tmdbApi } from '../services/tmdb';
+import { Bookmark } from 'lucide-react';
+import { useMovies } from '../context/MovieContext';
+
 
 const MovieCard = ({ movie, genres, onClick }) => {
+  const { bookmarks, toggleBookmark } = useMovies();
+  const isBookmarked = bookmarks?.some(b => b.id === movie.id);
+  
   const posterUrl = tmdbApi.getImageUrl(movie.poster_path);
+
   const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'NR';
   const year = movie.release_date ? movie.release_date.substring(0, 4) : '';
   
@@ -32,6 +39,22 @@ const MovieCard = ({ movie, genres, onClick }) => {
             No Poster
           </div>
         )}
+
+        {/* Bookmark Button */}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleBookmark(movie);
+          }}
+          className={`absolute top-3 left-3 p-2 rounded-full backdrop-blur-md transition-all duration-300 z-20 ${
+            isBookmarked 
+              ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/40' 
+              : 'bg-black/60 text-white/70 hover:bg-black/80 hover:text-white'
+          }`}
+        >
+          <Bookmark size={18} fill={isBookmarked ? "currentColor" : "none"} strokeWidth={2.5} />
+        </button>
+
         
         {/* Rating Badge */}
         <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white font-bold px-2 py-1 rounded-md border border-white/20 shadow-lg flex items-center gap-1 text-sm">
