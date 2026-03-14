@@ -32,8 +32,8 @@ const Header = ({ toggleSidebar, onAuthOpen }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-tight hidden sm:block">
-            MovieFinder
+          <h1 className="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-400 tracking-[0.1em] hidden sm:block">
+            LUME
           </h1>
         </div>
       </div>

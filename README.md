@@ -1,4 +1,4 @@
-# Movie Finder
+# PickFlicks
 
 A modern, responsive web application for discovering movies, built with React and Tailwind CSS featuring a glassmorphism design.
 

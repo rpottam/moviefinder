@@ -22,13 +22,34 @@ export const MovieProvider = ({ children }) => {
   // Filters
   const [selectedLanguage, setSelectedLanguage] = useState('');
   const [selectedGenres, setSelectedGenres] = useState([]);
+  const [minYear, setMinYear] = useState('');
   const [contentType, setContentType] = useState('trending'); // trending, new, classics, top_rated, bookmarks
+
 
 
   
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Debounced Search Query Tracking (Moved up to fix initialization order)
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  const [debouncedYear, setDebouncedYear] = useState(minYear);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedYear(minYear);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [minYear]);
+
 
   useEffect(() => {
     // Fetch genres on mount
@@ -62,10 +83,18 @@ export const MovieProvider = ({ children }) => {
       return;
     }
 
-    const docRef = doc(db, 'users', user.uid);
     const isBookmarked = bookmarks.some(b => b.id === movie.id);
+    const previousBookmarks = [...bookmarks];
+
+    // Optimistic Update
+    if (isBookmarked) {
+      setBookmarks(prev => prev.filter(b => b.id !== movie.id));
+    } else {
+      setBookmarks(prev => [...prev, movie]);
+    }
 
     try {
+      const docRef = doc(db, 'users', user.uid);
       if (isBookmarked) {
         await updateDoc(docRef, {
           bookmarks: arrayRemove(movie)
@@ -82,7 +111,11 @@ export const MovieProvider = ({ children }) => {
       }
     } catch (err) {
       console.error("Error toggling bookmark:", err);
+      // Rollback on failure
+      setBookmarks(previousBookmarks);
+      alert("Failed to update bookmark. Please try again.");
     }
+
   };
 
   const fetchMovies = useCallback(async (resetPage = false) => {
@@ -94,9 +127,10 @@ export const MovieProvider = ({ children }) => {
       if (resetPage) setPage(1);
 
       let data;
-      if (searchQuery.trim()) {
-        data = await tmdbApi.searchMovies(searchQuery, currentPage);
+      if (debouncedSearch.trim()) {
+        data = await tmdbApi.searchMovies(debouncedSearch, currentPage);
       } else {
+
         const genreStr = selectedGenres.join(',');
         
         // Base options for discovery
@@ -105,8 +139,11 @@ export const MovieProvider = ({ children }) => {
           with_original_language: selectedLanguage,
           page: currentPage,
           sort_by: 'popularity.desc',
-          include_adult: 'false'
+          include_adult: 'false',
+          ...(debouncedYear && { primary_release_year: debouncedYear })
         };
+
+
 
         // If we have filters (genres/language), trending often needs to fallback 
         // to discovery because TMDb trending endpoint doesn't support those filters.
@@ -176,13 +213,18 @@ export const MovieProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, selectedLanguage, selectedGenres, page, contentType, bookmarks]);
+  }, [debouncedSearch, selectedLanguage, selectedGenres, page, contentType, bookmarks, debouncedYear]);
+
 
 
   useEffect(() => {
     fetchMovies(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedLanguage, selectedGenres, contentType]);
+  }, [debouncedSearch, selectedLanguage, selectedGenres, debouncedYear, contentType]);
+
+
+
+
 
 
   const loadMore = () => {
@@ -211,8 +253,10 @@ export const MovieProvider = ({ children }) => {
     setSelectedLanguage('');
     setSelectedGenres([]);
     setSearchQuery('');
+    setMinYear('');
     setContentType('trending');
   };
+
 
 
   return (
@@ -227,9 +271,12 @@ export const MovieProvider = ({ children }) => {
       setSelectedLanguage,
       selectedGenres,
       toggleGenre,
+      minYear,
+      setMinYear,
       contentType,
       setContentType,
       clearFilters,
+
       bookmarks,
       toggleBookmark,
       loadMore,

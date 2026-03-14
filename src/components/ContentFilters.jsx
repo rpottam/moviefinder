@@ -18,7 +18,7 @@ const ContentFilters = () => {
 
 
   return (
-    <div className="flex items-center gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
+    <div className="flex items-center gap-4 overflow-x-auto pb-6 mb-8 no-scrollbar">
       {filters.map((filter) => {
         const Icon = filter.icon;
         const isActive = contentType === filter.id;
@@ -27,18 +27,19 @@ const ContentFilters = () => {
           <button
             key={filter.id}
             onClick={() => setContentType(filter.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-all duration-500 whitespace-nowrap group ${
               isActive
-                ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
-                : 'bg-white/5 border-white/10 text-textSecondary hover:bg-white/10 hover:border-white/20'
+                ? 'bg-primary text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] scale-105'
+                : 'bg-[#16161a] text-textSecondary hover:bg-[#1c1c22] hover:text-white border border-white/5'
             }`}
           >
-            <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="font-medium text-sm">{filter.label}</span>
+            <Icon size={16} strokeWidth={isActive ? 3 : 2} className={isActive ? 'animate-pulse' : 'group-hover:scale-110 transition-transform'} />
+            <span className={`text-sm tracking-wide ${isActive ? 'font-bold' : 'font-medium'}`}>{filter.label}</span>
           </button>
         );
       })}
     </div>
+
   );
 };
 
